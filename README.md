@@ -39,11 +39,3 @@ A simple and elegant **iOS Todo Application** built with **SwiftUI**. This app a
 ![Task List View](placeholder-image-url)
 
 ---
-
-## Installation 💻
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/todo-calendar-app.git
-   cd todo-calendar-app
-
