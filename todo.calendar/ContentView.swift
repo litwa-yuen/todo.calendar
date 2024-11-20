@@ -15,6 +15,20 @@ struct ContentView: View {
 
     var body: some View {
         TabView (selection: $selectedTab) {
+            
+            TaskListView(viewModel: viewModel, selectedDate: Date())
+                .background(Color(.systemGroupedBackground))
+                .imageScale(.large)
+                .foregroundStyle(.tint)
+                .tabItem {
+
+                    Image(systemName: "pencil")
+                    Text("Today")
+                }
+                .tag(0)
+                .onAppear {
+                    viewModel.fetchTasks()
+                }
            
             CalendarListView(viewModel: viewModel)
                 .background(Color(.systemGroupedBackground))
@@ -25,7 +39,7 @@ struct ContentView: View {
                     Image(systemName: "pencil")
                     Text("Calendar")
                 }
-                .tag(0)
+                .tag(1)
                 .onAppear {
                     viewModel.fetchTasks()
                 }
