@@ -28,14 +28,3 @@ A simple and elegant **iOS Todo Application** built with **SwiftUI**. This app a
 6. **Reminder**
  - Set Notification Reminder
   
-
----
-
-## Screenshots 📸
-### Calendar View
-![Calendar View](placeholder-image-url)
-
-### Task List View
-![Task List View](placeholder-image-url)
-
----
