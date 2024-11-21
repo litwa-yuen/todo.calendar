@@ -1,50 +1,66 @@
-//
-//  ContentView.swift
-//  todo.calendar
-//
-//  Created by Lit Wa Yuen on 11/16/24.
-//
-
 import SwiftUI
-import SwiftData
 
 struct ContentView: View {
     @StateObject private var viewModel = TaskViewModel()
     @State private var selectedDate = Date()
     @State var selectedTab = 0
+    @State private var isAddTaskModalPresented = false // State to track modal visibility
 
     var body: some View {
-        TabView (selection: $selectedTab) {
-            
-            TaskListView(viewModel: viewModel, selectedDate: Date())
-                .background(Color(.systemGroupedBackground))
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-                .tabItem {
+        ZStack {
+            // Main TabView
+            TabView(selection: $selectedTab) {
+                TaskListView(viewModel: viewModel, selectedDate: selectedDate)
+                    .background(Color(.systemGroupedBackground))
+                    .imageScale(.large)
+                    .foregroundStyle(.tint)
+                    .tabItem {
+                        Image(systemName: "pencil")
+                        Text("Today")
+                    }
+                    .tag(0)
+                    .onAppear {
+                        viewModel.fetchTasks()
+                    }
 
-                    Image(systemName: "pencil")
-                    Text("Today")
-                }
-                .tag(0)
-                .onAppear {
-                    viewModel.fetchTasks()
-                }
-           
-            CalendarListView(viewModel: viewModel)
-                .background(Color(.systemGroupedBackground))
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-                .tabItem {
+                CalendarListView(viewModel: viewModel)
+                    .background(Color(.systemGroupedBackground))
+                    .imageScale(.large)
+                    .foregroundStyle(.tint)
+                    .tabItem {
+                        Image(systemName: "calendar")
+                        Text("Calendar")
+                    }
+                    .tag(1)
+                    .onAppear {
+                        viewModel.fetchTasks()
+                    }
+            }
 
-                    Image(systemName: "pencil")
-                    Text("Calendar")
+            // Floating Add Task Button
+            VStack {
+                Spacer()
+
+                HStack {
+                    Spacer()
+
+                    Button(action: {
+                        isAddTaskModalPresented = true // Show modal
+                    }) {
+                        Image(systemName: "plus")
+                            .resizable()
+                            .frame(width: 50, height: 50)
+                            .foregroundColor(.white)
+                            .background(Circle().fill(Color.blue))
+                            .shadow(radius: 4)
+                    }
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 85)
                 }
-                .tag(1)
-                .onAppear {
-                    viewModel.fetchTasks()
-                }
+            }
         }
-      
+        .sheet(isPresented: $isAddTaskModalPresented) {
+            AddTaskModalView(viewModel: viewModel, selectedDate: $selectedDate)
+        }
     }
 }
-

@@ -29,12 +29,14 @@ class TaskViewModel: ObservableObject {
     }
 
     // Add a new task
-    func addTask(title: String, description: String, date: Date) {
+    func addTask(title: String, description: String, date: Date, completion: @escaping (Result<Void, Error>) -> Void) {
         let newTask = Task(id: UUID().uuidString, title: title, description: description, date: date, isDone: false)
-        do {
-            try db.collection("tasks").document(newTask.id!).setData(newTask.dictionary)
-        } catch {
-            print("Error adding task: \(error.localizedDescription)")
+        db.collection("tasks").document(newTask.id!).setData(newTask.dictionary) { error in
+            if let error = error {
+                completion(.failure(error)) // Pass error back via completion handler
+            } else {
+                completion(.success(())) // Indicate success
+            }
         }
     }
     
