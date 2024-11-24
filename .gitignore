@@ -7,4 +7,4 @@ DerivedData/
 
 # Build artifacts
 /build/
-*.xcodeproj/xcuserdata/
+todo.calendar.xcodeproj/
