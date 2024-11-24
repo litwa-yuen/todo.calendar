@@ -5,7 +5,9 @@ struct ContentView: View {
     @State private var selectedDate = Date()
     @State var selectedTab = 0
     @State private var isAddTaskModalPresented = false // State to track modal visibility
-
+    @State private var showingAlert = false
+    
+    
     var body: some View {
         ZStack {
             // Main TabView
@@ -19,10 +21,7 @@ struct ContentView: View {
                         Text("Today")
                     }
                     .tag(0)
-                    .onAppear {
-                        viewModel.fetchTasks()
-                    }
-
+                
                 CalendarListView(viewModel: viewModel)
                     .background(Color(.systemGroupedBackground))
                     .imageScale(.large)
@@ -32,18 +31,15 @@ struct ContentView: View {
                         Text("Calendar")
                     }
                     .tag(1)
-                    .onAppear {
-                        viewModel.fetchTasks()
-                    }
             }
-
+            
             // Floating Add Task Button
             VStack {
                 Spacer()
-
+                
                 HStack {
                     Spacer()
-
+                    
                     Button(action: {
                         isAddTaskModalPresented = true // Show modal
                     }) {
@@ -61,6 +57,24 @@ struct ContentView: View {
         }
         .sheet(isPresented: $isAddTaskModalPresented) {
             AddTaskModalView(viewModel: viewModel, selectedDate: $selectedDate)
+        }
+        .alert(isPresented: $showingAlert) {
+            Alert(
+                title: Text("Error"),
+                message: Text(viewModel.errorMessage ?? "An unknown error occurred."),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+        .onChange(of: viewModel.errorMessage) { oldValue, newValue in
+            if newValue != nil {
+                showingAlert = true
+            }
+        }
+        .onAppear() {
+            viewModel.subscribe()
+        }
+        .onDisappear() {
+            viewModel.unsubscribe()
         }
     }
 }
