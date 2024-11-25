@@ -28,3 +28,32 @@ A simple and elegant **iOS Todo Application** built with **SwiftUI**. This app a
 6. **Reminder**
  - Set Notification Reminder
   
+//TODO:
+dismiss modal after tap outside
+Done date is optional
+Create a ToDo list with no done date
+query with today, week of events, no done date event (with paging)
+same look for task and subtask
+save button in bottom of the view above the keyboard
+sign in with apple and google 
+create a label tag and tag a task
+
+
+
+Payment feature
+
+email service
+
+retention policy
+remove event after done one day
+set custom retention
+
+reminder notification same as apple reminder
+
+recurring event weekly or daily same as apple calendar 
+	create recurring id
+delete one current or series
+
+share tasks with other users
+
+andriod user, why not react native? 
