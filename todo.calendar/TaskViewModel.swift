@@ -12,56 +12,78 @@ class TaskViewModel: ObservableObject {
     @Published var tasks: [Task] = []
     private let db = Firestore.firestore()
     @Published var selectedTask: Task? = nil
+    @Published var subtasks: [Subtask] = []
+    private var subtaskListener: ListenerRegistration? // Firestore listener
     
     
     @Published var errorMessage: String? = nil
     
     private var listenerRegistration: ListenerRegistration?
-     
-     public func unsubscribe() {
-       if listenerRegistration != nil {
-         listenerRegistration?.remove()
-         listenerRegistration = nil
-       }
-     }
-     
-    func subscribe() {
-       if listenerRegistration == nil {
-         listenerRegistration = db.collection("tasks")
-           .addSnapshotListener { [weak self] (querySnapshot, error) in
-             guard let documents = querySnapshot?.documents else {
-               self?.errorMessage = "No documents in 'task' collection"
-               return
-             }
-             
-             self?.tasks = documents.compactMap { queryDocumentSnapshot in
-               let result = Result { try queryDocumentSnapshot.data(as: Task.self) }
-               
-               switch result {
-               case .success(let task):
-                   self?.errorMessage = nil
-                   return task
-               case .failure(let error):
-                 // A ColorEntry value could not be initialized from the DocumentSnapshot.
-                 switch error {
-                 case DecodingError.typeMismatch(_, let context):
-                   self?.errorMessage = "\(error.localizedDescription): \(context.debugDescription)"
-                 case DecodingError.valueNotFound(_, let context):
-                   self?.errorMessage = "\(error.localizedDescription): \(context.debugDescription)"
-                 case DecodingError.keyNotFound(_, let context):
-                   self?.errorMessage = "\(error.localizedDescription): \(context.debugDescription)"
-                 case DecodingError.dataCorrupted(let key):
-                   self?.errorMessage = "\(error.localizedDescription): \(key)"
-                 default:
-                   self?.errorMessage = "Error decoding document: \(error.localizedDescription)"
-                 }
-                 return nil
-               }
-             }
-           }
-       }
-     }
+    
+    public func unsubscribe() {
+        if listenerRegistration != nil {
+            listenerRegistration?.remove()
+            listenerRegistration = nil
+        }
+    }
+    
+    func unsubscribeSubtask() {
+        subtaskListener?.remove()
+        subtaskListener = nil
+    }
+    
+    func subscribeSubtask() {
+        let taskRef = db.collection("tasks").document(selectedTask?.id! ?? "")
 
+        subtaskListener = taskRef.addSnapshotListener { [weak self] snapshot, error in
+            guard let self = self, let data = snapshot?.data(), error == nil else {
+                print("Failed to fetch subtasks: \(error?.localizedDescription ?? "Unknown error")")
+                return
+            }
+            if let subtaskDictionaries = data["subtasks"] as? [[String: Any]] {
+                self.subtasks = subtaskDictionaries.compactMap { Subtask.from(dictionary: $0) }
+            }
+        
+        }
+    }
+    
+    func subscribe() {
+        if listenerRegistration == nil {
+            listenerRegistration = db.collection("tasks")
+                .addSnapshotListener { [weak self] (querySnapshot, error) in
+                    guard let documents = querySnapshot?.documents else {
+                        self?.errorMessage = "No documents in 'task' collection"
+                        return
+                    }
+                    
+                    self?.tasks = documents.compactMap { queryDocumentSnapshot in
+                        let result = Result { try queryDocumentSnapshot.data(as: Task.self) }
+                        
+                        switch result {
+                        case .success(let task):
+                            self?.errorMessage = nil
+                            return task
+                        case .failure(let error):
+                            // A ColorEntry value could not be initialized from the DocumentSnapshot.
+                            switch error {
+                            case DecodingError.typeMismatch(_, let context):
+                                self?.errorMessage = "\(error.localizedDescription): \(context.debugDescription)"
+                            case DecodingError.valueNotFound(_, let context):
+                                self?.errorMessage = "\(error.localizedDescription): \(context.debugDescription)"
+                            case DecodingError.keyNotFound(_, let context):
+                                self?.errorMessage = "\(error.localizedDescription): \(context.debugDescription)"
+                            case DecodingError.dataCorrupted(let key):
+                                self?.errorMessage = "\(error.localizedDescription): \(key)"
+                            default:
+                                self?.errorMessage = "Error decoding document: \(error.localizedDescription)"
+                            }
+                            return nil
+                        }
+                    }
+                }
+        }
+    }
+    
     
     
     
@@ -85,25 +107,32 @@ class TaskViewModel: ObservableObject {
             }
         }
     }
-    
-    func addSubtask(to taskId: String, subtaskTitle: String) {
-        guard let taskIndex = tasks.firstIndex(where: { $0.id == taskId }) else { return }
+
+    func addSubtask(subtaskTitle: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let selectedTask = selectedTask,
+              let taskIndex = tasks.firstIndex(where: { $0.id == selectedTask.id }) else {
+            return
+        }
+
+        // Create a new Subtask
+        let newSubtask = Subtask(id: UUID().uuidString, title: subtaskTitle, isDone: false)
         
-        let newSubtask = Subtask(title: subtaskTitle)
+        // Update the local task's subtasks
         tasks[taskIndex].subtasks.append(newSubtask)
-        
+
         // Update Firestore
-        let taskRef = db.collection("tasks").document(taskId)
+        let taskRef = db.collection("tasks").document(selectedTask.id ?? "")
         taskRef.updateData([
-            "subtasks": tasks[taskIndex].subtasks.map { $0.dictionary }
+            "subtasks": FieldValue.arrayUnion([newSubtask.dictionary]) // Ensure newSubtask has a dictionary representation
         ]) { error in
             if let error = error {
-                print("Error adding subtask: \(error.localizedDescription)")
+                completion(.failure(error)) // Pass error back via completion handler
+            } else {
+                completion(.success(())) // Indicate success
             }
         }
     }
-    
-    
+
     
     func markSubtaskAsDone(taskId: String, subtaskId: String) {
         guard let taskIndex = tasks.firstIndex(where: { $0.id == taskId }),
@@ -138,9 +167,9 @@ class TaskViewModel: ObservableObject {
             print("Error: Selected task is nil or does not have an ID")
             return
         }
-
+        
         let docRef = db.collection("tasks").document(taskId)
-
+        
         // Convert the task object to a dictionary for Firestore
         do {
             let taskData = try Firestore.Encoder().encode(updateTask) // Convert to dictionary
@@ -155,6 +184,6 @@ class TaskViewModel: ObservableObject {
             print("Error encoding task: \(error.localizedDescription)")
         }
     }
-
+    
 }
 

@@ -12,35 +12,43 @@ struct EditTaskView: View {
     @ObservedObject var viewModel: TaskViewModel
     @Environment(\.dismiss) var dismiss // To close the modal
 
+    @State private var isSubtaskModalPresented = false // Controls the subtask modal visibility
+
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Task Details")) {
-                    TextField("Title", text: $task.title)
-                    
-                    DatePicker("Date", selection: $task.date, displayedComponents: .date)
-                }
+                TaskHeaderView(task: $task)
+                TaskBodyView(viewModel: viewModel, isSubtaskModalPresented: $isSubtaskModalPresented)
             }
             .navigationTitle("Edit Task")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                // Cancel Button
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }
                 }
-                ToolbarItem(placement: .cancellationAction) {
+                // Delete Button
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button("Delete") {
-                        viewModel.deleteTask(taskId: $task.id!)
+                        viewModel.deleteTask(taskId: task.id!)
                         dismiss()
                     }
+                    .foregroundColor(.red)
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                // Save Button
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
                         saveTask()
                         dismiss()
                     }
                 }
             }
+        }
+   
+        .sheet(isPresented: $isSubtaskModalPresented) {
+            AddSubtaskModalView(viewModel: viewModel)
+                .presentationDetents([.fraction(0.5)]) // Show the modal in half-screen size
         }
     }
 
