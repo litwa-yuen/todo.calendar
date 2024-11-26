@@ -27,4 +27,6 @@ A simple and elegant **iOS Todo Application** built with **SwiftUI**. This app a
 
 6. **Reminder**
  - Set Notification Reminder
-  
+
+6. **Share Task**
+ - share tasks with other users
