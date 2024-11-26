@@ -13,7 +13,9 @@ struct TaskHeaderView: View {
     var body: some View {
         Section {
             TextField("Title", text: $task.title)
+                .foregroundColor(.primary)
             DatePicker("Date", selection: $task.date, displayedComponents: .date)
+                .foregroundColor(.primary)
         }
     }
 }

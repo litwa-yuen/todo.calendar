@@ -4,6 +4,11 @@
 *.plist
 xcuserdata/
 DerivedData/
+todo.calendar/Assets.xcassets/
+todo.calendar/Preview Content/
+todo.calendar/todo_calendar.entitlements
+todo.calendarTests/
+todo.calendarUITests/
 
 # Build artifacts
 /build/

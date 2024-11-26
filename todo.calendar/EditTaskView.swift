@@ -20,7 +20,8 @@ struct EditTaskView: View {
                 TaskHeaderView(task: $task)
                 TaskBodyView(viewModel: viewModel, isSubtaskModalPresented: $isSubtaskModalPresented)
             }
-            .navigationTitle("Edit Task")
+            .padding(.top)
+            .ignoresSafeArea()
             .toolbar {
                 // Cancel Button
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -48,7 +49,7 @@ struct EditTaskView: View {
    
         .sheet(isPresented: $isSubtaskModalPresented) {
             AddSubtaskModalView(viewModel: viewModel)
-                .presentationDetents([.fraction(0.5)]) // Show the modal in half-screen size
+                .presentationDetents([.fraction(0.1)]) // Show the modal in half-screen size
         }
     }
 

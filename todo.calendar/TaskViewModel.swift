@@ -12,6 +12,7 @@ class TaskViewModel: ObservableObject {
     @Published var tasks: [Task] = []
     private let db = Firestore.firestore()
     @Published var selectedTask: Task? = nil
+    @Published var selectedSubtask: Subtask? = nil
     @Published var subtasks: [Subtask] = []
     private var subtaskListener: ListenerRegistration? // Firestore listener
     
@@ -34,7 +35,7 @@ class TaskViewModel: ObservableObject {
     
     func subscribeSubtask() {
         let taskRef = db.collection("tasks").document(selectedTask?.id! ?? "")
-
+        
         subtaskListener = taskRef.addSnapshotListener { [weak self] snapshot, error in
             guard let self = self, let data = snapshot?.data(), error == nil else {
                 print("Failed to fetch subtasks: \(error?.localizedDescription ?? "Unknown error")")
@@ -43,7 +44,7 @@ class TaskViewModel: ObservableObject {
             if let subtaskDictionaries = data["subtasks"] as? [[String: Any]] {
                 self.subtasks = subtaskDictionaries.compactMap { Subtask.from(dictionary: $0) }
             }
-        
+            
         }
     }
     
@@ -84,16 +85,40 @@ class TaskViewModel: ObservableObject {
         }
     }
     
-    
-    
-    
     // Mark a task as done
-    func markTaskAsDone(taskId: String, isDone: Bool) {
+    func markSubtaskAsDone(subtaskId: String, isDone: Bool) {
+        let taskRef = db.collection("tasks").document(selectedTask?.id ?? "")
         
-        db.collection("tasks").document(taskId).updateData(["isDone": isDone, "date": Date()])
-        
-        
+        taskRef.getDocument { (document, error) in
+            guard let document = document, document.exists,
+                  var taskData = document.data(),
+                  var subtasks = taskData["subtasks"] as? [[String: Any]] else {
+                print("Failed to retrieve subtasks or task data.")
+                return
+            }
+            
+            // Find the subtask and update its isDone field
+            if let index = subtasks.firstIndex(where: { $0["id"] as? String == subtaskId }) {
+                subtasks[index]["isDone"] = isDone
+                
+                // Update the Firestore document
+                taskRef.updateData(["subtasks": subtasks]) { error in
+                    if let error = error {
+                        print("Error updating subtask: \(error.localizedDescription)")
+                    } else {
+                        print("Subtask updated successfully.")
+                    }
+                }
+            } else {
+                print("Subtask not found.")
+            }
+        }
     }
+    
+    func markTaskAsDone(taskId: String, isDone: Bool) {
+        db.collection("tasks").document(taskId).updateData(["isDone": isDone, "date": Date()])
+    }
+    
     
     
     // Add a new task
@@ -107,19 +132,19 @@ class TaskViewModel: ObservableObject {
             }
         }
     }
-
+    
     func addSubtask(subtaskTitle: String, completion: @escaping (Result<Void, Error>) -> Void) {
         guard let selectedTask = selectedTask,
               let taskIndex = tasks.firstIndex(where: { $0.id == selectedTask.id }) else {
             return
         }
-
+        
         // Create a new Subtask
         let newSubtask = Subtask(id: UUID().uuidString, title: subtaskTitle, isDone: false)
         
         // Update the local task's subtasks
         tasks[taskIndex].subtasks.append(newSubtask)
-
+        
         // Update Firestore
         let taskRef = db.collection("tasks").document(selectedTask.id ?? "")
         taskRef.updateData([
@@ -132,7 +157,7 @@ class TaskViewModel: ObservableObject {
             }
         }
     }
-
+    
     
     func markSubtaskAsDone(taskId: String, subtaskId: String) {
         guard let taskIndex = tasks.firstIndex(where: { $0.id == taskId }),
@@ -182,6 +207,38 @@ class TaskViewModel: ObservableObject {
             }
         } catch {
             print("Error encoding task: \(error.localizedDescription)")
+        }
+    }
+    
+    
+    //TODO: merge markSubtaskAsDone
+    func updateSubtask(title: String, isDone: Bool) {
+        let taskRef = db.collection("tasks").document(selectedTask?.id ?? "")
+        
+        taskRef.getDocument { (document, error) in
+            guard let document = document, document.exists,
+                  let taskData = document.data(),
+                  var subtasks = taskData["subtasks"] as? [[String: Any]] else {
+                print("Failed to retrieve subtasks or task data.")
+                return
+            }
+            
+            // Find the subtask and update its isDone field
+            if let index = subtasks.firstIndex(where: { $0["id"] as? String == self.selectedSubtask?.id ?? "" }) {
+                subtasks[index]["isDone"] = isDone
+                subtasks[index]["title"] = title
+                
+                // Update the Firestore document
+                taskRef.updateData(["subtasks": subtasks]) { error in
+                    if let error = error {
+                        print("Error updating subtask: \(error.localizedDescription)")
+                    } else {
+                        print("Subtask updated successfully.")
+                    }
+                }
+            } else {
+                print("Subtask not found.")
+            }
         }
     }
     

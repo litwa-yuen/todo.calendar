@@ -25,7 +25,7 @@ struct TaskListView: View {
                                 viewModel.markTaskAsDone(taskId: task.id!, isDone: newValue)
                             }
                         )) {
-                            //EmptyView() // Use EmptyView for Toggle's label
+                            EmptyView() // Use EmptyView for Toggle's label
                         }
                         .toggleStyle(iOSCheckboxToggleStyle())
                         

@@ -13,41 +13,46 @@ struct AddSubtaskModalView: View {
     @Environment(\.presentationMode) private var presentationMode // For dismissing the modal
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @FocusState private var isTaskTitleFocused: Bool // Focus state for the text field
     
     var body: some View {
         NavigationView {
-            Form {
-                Section(header: Text("Subtask Title")) {
-                    TextField("Enter subtask title", text: $taskTitle)
-                }
-                Section {
-                    Button(action: {
-                        addSubtask()
-                    }) {
-                        Text("Save Subtask")
-                            .frame(maxWidth: .infinity, alignment: .center)
+            VStack {
+                TextField("Subtask title", text: $taskTitle)
+                    .focused($isTaskTitleFocused) // Bind the focus state
+                    .padding()
+            }
+          
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer() // Push the button to the right
+                    Button("Save Subtask") {
+                        saveAndReset()
                     }
                     .disabled(taskTitle.isEmpty) // Disable if title is empty
                 }
             }
-            .navigationTitle("Add Subtask")
-            .navigationBarItems(trailing: Button("Cancel") {
-                presentationMode.wrappedValue.dismiss()
-            })
+            .onAppear {
+                isTaskTitleFocused = true // Automatically focus when the modal appears
+            }
+            .navigationBarHidden(true)
             .alert(isPresented: $showAlert) {
                 Alert(title: Text("Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
             }
+            
         }
+        .ignoresSafeArea()
     }
     
-    private func addSubtask() {
+    private func saveAndReset() {
+        guard !taskTitle.isEmpty else { return }
+        
         viewModel.addSubtask(subtaskTitle: taskTitle) { result in
             switch result {
             case .success:
-                // Dismiss the modal on success
-                presentationMode.wrappedValue.dismiss()
+                taskTitle = "" // Reset the text field for adding the next subtask
             case .failure(let error):
-                alertMessage = "Failed to add task: \(error.localizedDescription)"
+                alertMessage = "Failed to add subtask: \(error.localizedDescription)"
                 showAlert = true
             }
         }
