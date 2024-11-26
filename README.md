@@ -23,10 +23,10 @@ A simple and elegant **iOS Todo Application** built with **SwiftUI**. This app a
    - Schedule tasks for any future date via the calendar.
 
 5. **Recurring task**
- - Schedule tasks for recurring Monday - Sunday
+   - Schedule tasks for recurring Monday - Sunday
 
 6. **Reminder**
- - Set Notification Reminder
+   - Set Notification Reminder
 
 7. **Share Task**
- - share tasks with other users
+   - share tasks with other users
