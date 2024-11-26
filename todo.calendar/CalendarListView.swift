@@ -50,18 +50,7 @@ struct CalendarListView: View {
                                     .foregroundColor(.gray)
                             } else {
                                 ForEach(dailyTasks) { task in
-                                    HStack {
-                                        Text(task.title)
-                                            .strikethrough(task.isDone, color: .red)
-                                            .foregroundColor(task.isDone ? .gray : .primary)
-                                        
-                                        Spacer()
-                                        
-                                        if task.isDone {
-                                            Text("Done")
-                                                .foregroundColor(.green)
-                                        }
-                                    }
+                                    TaskRowView(task: task, viewModel: viewModel)
                                 }
                             }
                         }

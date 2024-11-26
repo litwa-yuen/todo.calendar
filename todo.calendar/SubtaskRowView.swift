@@ -17,7 +17,7 @@ struct SubtaskRowView: View {
             Toggle(isOn: Binding(
                 get: { subtask.isDone },
                 set: { newValue in
-                    viewModel.markSubtaskAsDone(subtaskId: subtask.id!, isDone: newValue)
+                    viewModel.updateSubtask(subtaskId: subtask.id!, title: subtask.title, isDone: newValue)
                 }
             )) {
                 EmptyView()

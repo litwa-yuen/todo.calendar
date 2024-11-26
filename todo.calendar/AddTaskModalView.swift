@@ -14,12 +14,15 @@ struct AddTaskModalView: View {
     @Environment(\.presentationMode) private var presentationMode // For dismissing the modal
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @FocusState private var isTaskTitleFocused: Bool // Focus state for the text field
+
 
     var body: some View {
         NavigationView {
             Form {
                 Section(header: Text("Task Title")) {
                     TextField("Enter task title", text: $taskTitle)
+                        .focused($isTaskTitleFocused) // Bind the focus state
                 }
                 Section(header: Text("Task Description")) {
                     TextField("Enter task description", text: $taskDescription)
@@ -37,7 +40,9 @@ struct AddTaskModalView: View {
                     .disabled(taskTitle.isEmpty) // Disable if title is empty
                 }
             }
-            .navigationTitle("Add Task")
+            .onAppear {
+                isTaskTitleFocused = true // Automatically focus when the modal appears
+            }
             .navigationBarItems(trailing: Button("Cancel") {
                 presentationMode.wrappedValue.dismiss()
             })

@@ -11,12 +11,14 @@ struct EditSubtaskView: View {
     @ObservedObject var viewModel: TaskViewModel
     @State private var subtaskTitle: String
     @State private var isDone: Bool
+    var subtaskId: String
     @Environment(\.dismiss) var dismiss
 
     init(viewModel: TaskViewModel, subtask: Subtask) {
         self.viewModel = viewModel
         _subtaskTitle = State(initialValue: subtask.title)
         _isDone = State(initialValue: subtask.isDone)
+        subtaskId = subtask.id!
     }
 
     var body: some View {
@@ -32,7 +34,7 @@ struct EditSubtaskView: View {
                 
                 Section {
                     Button("Save") {
-                        saveSubtask()
+                        saveSubtask(subtaskId: subtaskId)
                     }
                     .disabled(subtaskTitle.isEmpty)
                     
@@ -42,12 +44,11 @@ struct EditSubtaskView: View {
                     .foregroundColor(.red)
                 }
             }
-            .navigationTitle("Edit Subtask")
         }
     }
 
-    private func saveSubtask() {
-        viewModel.updateSubtask(title: subtaskTitle, isDone: isDone)
+    private func saveSubtask(subtaskId: String) {
+        viewModel.updateSubtask(subtaskId: subtaskId, title: subtaskTitle, isDone: isDone)
         dismiss()
     }
 }

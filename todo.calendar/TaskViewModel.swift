@@ -85,36 +85,6 @@ class TaskViewModel: ObservableObject {
         }
     }
     
-    // Mark a task as done
-    func markSubtaskAsDone(subtaskId: String, isDone: Bool) {
-        let taskRef = db.collection("tasks").document(selectedTask?.id ?? "")
-        
-        taskRef.getDocument { (document, error) in
-            guard let document = document, document.exists,
-                  var taskData = document.data(),
-                  var subtasks = taskData["subtasks"] as? [[String: Any]] else {
-                print("Failed to retrieve subtasks or task data.")
-                return
-            }
-            
-            // Find the subtask and update its isDone field
-            if let index = subtasks.firstIndex(where: { $0["id"] as? String == subtaskId }) {
-                subtasks[index]["isDone"] = isDone
-                
-                // Update the Firestore document
-                taskRef.updateData(["subtasks": subtasks]) { error in
-                    if let error = error {
-                        print("Error updating subtask: \(error.localizedDescription)")
-                    } else {
-                        print("Subtask updated successfully.")
-                    }
-                }
-            } else {
-                print("Subtask not found.")
-            }
-        }
-    }
-    
     func markTaskAsDone(taskId: String, isDone: Bool) {
         db.collection("tasks").document(taskId).updateData(["isDone": isDone, "date": Date()])
     }
@@ -210,9 +180,7 @@ class TaskViewModel: ObservableObject {
         }
     }
     
-    
-    //TODO: merge markSubtaskAsDone
-    func updateSubtask(title: String, isDone: Bool) {
+    func updateSubtask(subtaskId: String, title: String, isDone: Bool) {
         let taskRef = db.collection("tasks").document(selectedTask?.id ?? "")
         
         taskRef.getDocument { (document, error) in
@@ -224,7 +192,7 @@ class TaskViewModel: ObservableObject {
             }
             
             // Find the subtask and update its isDone field
-            if let index = subtasks.firstIndex(where: { $0["id"] as? String == self.selectedSubtask?.id ?? "" }) {
+            if let index = subtasks.firstIndex(where: { $0["id"] as? String == subtaskId }) {
                 subtasks[index]["isDone"] = isDone
                 subtasks[index]["title"] = title
                 
