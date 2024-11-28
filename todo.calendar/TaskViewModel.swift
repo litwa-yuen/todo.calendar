@@ -170,6 +170,18 @@ class TaskViewModel: ObservableObject {
         db.collection("tasks").document(taskId).updateData(["isDone": updateTask.isDone, "title": updateTask.title, "description": updateTask.description, "date": updateTask.date])
     }
     
+    func updateTaskDate(taskId: String, date: Date?) {
+        let dateValue: Any = date ?? NSNull()
+        
+        db.collection("tasks").document(taskId).updateData(["date": dateValue]) { error in
+            if let error = error {
+                print("Error updating task date: \(error.localizedDescription)")
+            } else {
+                print("Task date updated successfully.")
+            }
+        }
+    }
+    
     func updateSubtask(subtaskId: String, title: String, isDone: Bool) {
         let taskRef = db.collection("tasks").document(selectedTask?.id ?? "")
         

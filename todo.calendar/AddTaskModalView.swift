@@ -15,6 +15,14 @@ struct AddTaskModalView: View {
     @State private var showAlert = false
     @State private var alertMessage = ""
     @FocusState private var isTaskTitleFocused: Bool // Focus state for the text field
+    @State private var fakeTask = Task(
+        id: UUID().uuidString,
+        title: "Fake Task",
+        description: "Fake Task Description",
+        date: Date(),
+        isDone: false,
+        subtasks: []
+    )
 
 
     var body: some View {
@@ -28,7 +36,7 @@ struct AddTaskModalView: View {
                     TextField("Enter task description", text: $taskDescription)
                 }
                 Section(header: Text("Task Date")) {
-                    DatePickerButtonView(selectedDate: $selectedDate)
+                    DatePickerButtonView(task: $fakeTask, viewModel: viewModel, isNewTask: .constant(true), selectedDate: $selectedDate)
                 }
                 Section {
                     Button(action: {
@@ -51,7 +59,7 @@ struct AddTaskModalView: View {
             }
         }
     }
-
+    
     private func addTask() {
         viewModel.addTask(title: taskTitle, description: taskDescription, date: selectedDate) { result in
             switch result {

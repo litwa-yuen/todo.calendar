@@ -10,12 +10,13 @@ import SwiftUI
 struct TaskHeaderView: View {
     @Binding var task: Task
     @State private var selectedDate: Date? = nil
+    @ObservedObject var viewModel: TaskViewModel
 
     var body: some View {
         Section {
             TextField("Title", text: $task.title)
                 .foregroundColor(.primary)
-            DatePickerButtonView(selectedDate: $selectedDate)
+            DatePickerButtonView(task: $task, viewModel: viewModel, isNewTask: .constant(false), selectedDate: $selectedDate)
           
         }
         .onAppear {

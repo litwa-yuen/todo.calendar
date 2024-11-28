@@ -17,7 +17,7 @@ struct EditTaskView: View {
     var body: some View {
         NavigationView {
             Form {
-                TaskHeaderView(task: $task)
+                TaskHeaderView(task: $task, viewModel: viewModel)
                 TaskBodyView(viewModel: viewModel, isSubtaskModalPresented: $isSubtaskModalPresented)
             }
             .padding(.top)
