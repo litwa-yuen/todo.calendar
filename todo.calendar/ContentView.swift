@@ -12,7 +12,7 @@ struct ContentView: View {
         ZStack {
             // Main TabView
             TabView(selection: $selectedTab) {
-                TaskListView(viewModel: viewModel, selectedDate: selectedDate)
+                TaskListView(viewModel: viewModel, selectedDate: selectedDate, title: "Today")
                     .background(Color(.systemGroupedBackground))
                     .imageScale(.large)
                     .foregroundStyle(.tint)
@@ -31,6 +31,15 @@ struct ContentView: View {
                         Text("Calendar")
                     }
                     .tag(1)
+                TaskListView(viewModel: viewModel, selectedDate: nil, title: "To Do")
+                    .background(Color(.systemGroupedBackground))
+                    .imageScale(.large)
+                    .foregroundStyle(.tint)
+                    .tabItem {
+                        Image(systemName: "pencil")
+                        Text("To Do")
+                    }
+                    .tag(2)
             }
             
             // Floating Add Task Button
@@ -56,7 +65,7 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $isAddTaskModalPresented) {
-            AddTaskModalView(viewModel: viewModel, selectedDate: $selectedDate)
+            AddTaskModalView(viewModel: viewModel)
         }
         .alert(isPresented: $showingAlert) {
             Alert(
@@ -69,12 +78,6 @@ struct ContentView: View {
             if newValue != nil {
                 showingAlert = true
             }
-        }
-        .onAppear() {
-            viewModel.subscribe()
-        }
-        .onDisappear() {
-            viewModel.unsubscribe()
         }
     }
 }

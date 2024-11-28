@@ -48,15 +48,36 @@ class TaskViewModel: ObservableObject {
         }
     }
     
-    func subscribe() {
-        if listenerRegistration == nil {
-            listenerRegistration = db.collection("tasks")
+    
+    func getStartAndEndOfDay(for date: Date, isNext7Days: Bool) -> (startOfDay: Timestamp, endOfDay: Timestamp) {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date) // Midnight of the given day
+        guard let endOfDay = calendar.date(byAdding: .day, value: (isNext7Days ? 7 : 1), to: startOfDay) else {
+            fatalError("Failed to calculate end of day")
+        }
+        return (Timestamp(date: startOfDay), Timestamp(date: endOfDay))
+    }
+    
+    func subscribe(selectedDate: Date?, isNext7Days: Bool) {
+          
+            var query: Query!
+            if let selectedDate {
+                let (startOfDay, endOfDay) = getStartAndEndOfDay(for: selectedDate, isNext7Days: isNext7Days)
+                query = db.collection("tasks")
+                    .whereField("date", isGreaterThanOrEqualTo: startOfDay)
+                    .whereField("date", isLessThan: endOfDay)
+            } else {
+                query = db.collection("tasks")
+                    .whereField("date", isEqualTo: NSNull())
+            }
+            tasks.removeAll()
+
+            listenerRegistration = query
                 .addSnapshotListener { [weak self] (querySnapshot, error) in
                     guard let documents = querySnapshot?.documents else {
                         self?.errorMessage = "No documents in 'task' collection"
                         return
                     }
-                    
                     self?.tasks = documents.compactMap { queryDocumentSnapshot in
                         let result = Result { try queryDocumentSnapshot.data(as: Task.self) }
                         
@@ -65,7 +86,6 @@ class TaskViewModel: ObservableObject {
                             self?.errorMessage = nil
                             return task
                         case .failure(let error):
-                            // A ColorEntry value could not be initialized from the DocumentSnapshot.
                             switch error {
                             case DecodingError.typeMismatch(_, let context):
                                 self?.errorMessage = "\(error.localizedDescription): \(context.debugDescription)"
@@ -82,19 +102,27 @@ class TaskViewModel: ObservableObject {
                         }
                     }
                 }
-        }
+        
     }
     
     func markTaskAsDone(taskId: String, isDone: Bool) {
-        db.collection("tasks").document(taskId).updateData(["isDone": isDone, "date": Date()])
+        db.collection("tasks").document(taskId).updateData(["isDone": isDone])
     }
     
     
     
     // Add a new task
-    func addTask(title: String, description: String, date: Date, completion: @escaping (Result<Void, Error>) -> Void) {
-        let newTask = Task(id: UUID().uuidString, title: title, description: description, date: date, isDone: false)
-        db.collection("tasks").document(newTask.id!).setData(newTask.dictionary) { error in
+    func addTask(title: String, description: String, date: Date?, completion: @escaping (Result<Void, Error>) -> Void) {
+        
+        var newTask = Task(title: title, description: description, isDone: false, subtasks: [])
+        
+        if let date = date {
+            newTask.date = date
+        }
+        
+        let newTaskId = db.collection("tasks").document().documentID
+        newTask.id = newTaskId
+        db.collection("tasks").document(newTaskId).setData(newTask.dictionary) { error in
             if let error = error {
                 completion(.failure(error)) // Pass error back via completion handler
             } else {
@@ -104,20 +132,16 @@ class TaskViewModel: ObservableObject {
     }
     
     func addSubtask(subtaskTitle: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        guard let selectedTask = selectedTask,
-              let taskIndex = tasks.firstIndex(where: { $0.id == selectedTask.id }) else {
-            return
-        }
+        guard let selectedTaskId = selectedTask?.id else { return }
+        
+        let newSubtaskId = db.collection("tasks").document(selectedTaskId).collection("subtasks").document().documentID
         
         // Create a new Subtask
-        let newSubtask = Subtask(id: UUID().uuidString, title: subtaskTitle, isDone: false)
-        
-        // Update the local task's subtasks
-        tasks[taskIndex].subtasks.append(newSubtask)
-        
+        var newSubtask = Subtask(title: subtaskTitle, isDone: false)
+        newSubtask.id = newSubtaskId
         // Update Firestore
-        let taskRef = db.collection("tasks").document(selectedTask.id ?? "")
-        taskRef.updateData([
+       
+        db.collection("tasks").document(selectedTaskId).updateData([
             "subtasks": FieldValue.arrayUnion([newSubtask.dictionary]) // Ensure newSubtask has a dictionary representation
         ]) { error in
             if let error = error {
@@ -127,26 +151,6 @@ class TaskViewModel: ObservableObject {
             }
         }
     }
-    
-    
-    func markSubtaskAsDone(taskId: String, subtaskId: String) {
-        guard let taskIndex = tasks.firstIndex(where: { $0.id == taskId }),
-              let subtaskIndex = tasks[taskIndex].subtasks.firstIndex(where: { $0.id == subtaskId })
-        else { return }
-        
-        tasks[taskIndex].subtasks[subtaskIndex].isDone.toggle()
-        
-        // Update Firestore
-        let taskRef = db.collection("tasks").document(taskId)
-        taskRef.updateData([
-            "subtasks": tasks[taskIndex].subtasks.map { $0.dictionary }
-        ]) { error in
-            if let error = error {
-                print("Error updating subtask: \(error.localizedDescription)")
-            }
-        }
-    }
-    
     
     // Delete a task
     func deleteTask(taskId: String) {
@@ -163,21 +167,7 @@ class TaskViewModel: ObservableObject {
             return
         }
         
-        let docRef = db.collection("tasks").document(taskId)
-        
-        // Convert the task object to a dictionary for Firestore
-        do {
-            let taskData = try Firestore.Encoder().encode(updateTask) // Convert to dictionary
-            docRef.updateData(taskData) { error in
-                if let error = error {
-                    print("Error updating task: \(error.localizedDescription)")
-                } else {
-                    print("Task updated successfully!")
-                }
-            }
-        } catch {
-            print("Error encoding task: \(error.localizedDescription)")
-        }
+        db.collection("tasks").document(taskId).updateData(["isDone": updateTask.isDone, "title": updateTask.title, "description": updateTask.description, "date": updateTask.date])
     }
     
     func updateSubtask(subtaskId: String, title: String, isDone: Bool) {

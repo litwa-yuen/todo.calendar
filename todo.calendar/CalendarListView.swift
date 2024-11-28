@@ -44,7 +44,7 @@ struct CalendarListView: View {
                     ForEach(0..<7, id: \.self) { offset in
                         let date = Calendar.current.date(byAdding: .day, value: offset, to: currentWeekStartDate)!
                         Section(header: Text(dateFormatted(date))) {
-                            let dailyTasks = viewModel.tasks.filter { Calendar.current.isDate($0.date, inSameDayAs: date) }
+                            let dailyTasks = viewModel.tasks.filter { Calendar.current.isDate($0.date ?? Date(), inSameDayAs: date) }
                             if dailyTasks.isEmpty {
                                 Text("No tasks for this day")
                                     .foregroundColor(.gray)
@@ -59,6 +59,10 @@ struct CalendarListView: View {
                 
             }
             .navigationTitle("Calendar")
+            .onAppear() {
+                viewModel.unsubscribe()
+                viewModel.subscribe(selectedDate: currentWeekStartDate, isNext7Days: true)
+            }
         }
         
     }

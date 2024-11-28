@@ -8,7 +8,7 @@ import SwiftUI
 
 struct AddTaskModalView: View {
     @ObservedObject var viewModel: TaskViewModel
-    @Binding var selectedDate: Date
+    @State private var selectedDate: Date? = nil
     @State private var taskTitle: String = ""
     @State private var taskDescription: String = ""
     @Environment(\.presentationMode) private var presentationMode // For dismissing the modal
@@ -28,7 +28,7 @@ struct AddTaskModalView: View {
                     TextField("Enter task description", text: $taskDescription)
                 }
                 Section(header: Text("Task Date")) {
-                    DatePicker("Select Date", selection: $selectedDate, displayedComponents: .date)
+                    DatePickerButtonView(selectedDate: $selectedDate)
                 }
                 Section {
                     Button(action: {

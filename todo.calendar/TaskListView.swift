@@ -9,18 +9,21 @@ import SwiftUI
 
 struct TaskListView: View {
     @ObservedObject var viewModel: TaskViewModel
-    var selectedDate: Date
+    let selectedDate: Date?
+    let title: String
         
     var body: some View {
         NavigationView {
             List {
-                ForEach(viewModel.tasks.filter { Calendar.current.isDate($0.date, inSameDayAs: selectedDate) }) { task in
+                ForEach(viewModel.tasks) { task in
                     TaskRowView(task: task, viewModel: viewModel)
                 }
             }
-            .navigationTitle("Today")
+            .navigationTitle(title)
         }
-        
-      
+        .onAppear() {
+            viewModel.unsubscribe()
+            viewModel.subscribe(selectedDate: selectedDate, isNext7Days: false)
+        }      
     }
 }

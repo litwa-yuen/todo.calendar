@@ -24,18 +24,9 @@ struct Task: Identifiable, Codable {
     @DocumentID var id: String?
     var title: String
     var description: String
-    var date: Date
+    var date: Date?
     var isDone: Bool
     var subtasks: [Subtask] // New property for subtasks
-
-    init(id: String = UUID().uuidString, title: String, description: String, date: Date, isDone: Bool = false, subtasks: [Subtask] = []) {
-        self.id = id
-        self.title = title
-        self.description = description
-        self.date = date
-        self.isDone = isDone
-        self.subtasks = subtasks
-    }
 
     var dictionary: [String: Any] {
         return [
