@@ -7,6 +7,7 @@
 
 
 import FirebaseFirestore
+import FirebaseAuth
 
 class TaskViewModel: ObservableObject {
     @Published var tasks: [Task] = []
@@ -15,11 +16,29 @@ class TaskViewModel: ObservableObject {
     @Published var selectedSubtask: Subtask? = nil
     @Published var subtasks: [Subtask] = []
     private var subtaskListener: ListenerRegistration? // Firestore listener
+    @Published var user: User? // Firebase User
     
     
     @Published var errorMessage: String? = nil
     
     private var listenerRegistration: ListenerRegistration?
+    
+    init() {
+        observeAuthState()
+    }
+    private func observeAuthState() {
+        Auth.auth().addStateDidChangeListener { [weak self] (_, user) in
+            self?.user = user
+            if let user = user {
+                print("Firebase user: \(user.uid)")
+               // self?.subscribe(userId: user.uid)
+            } else {
+                self?.unsubscribe()
+                self?.tasks.removeAll()
+            }
+        }
+    }
+    
     
     public func unsubscribe() {
         if listenerRegistration != nil {
@@ -59,49 +78,49 @@ class TaskViewModel: ObservableObject {
     }
     
     func subscribe(selectedDate: Date?, isNext7Days: Bool) {
-          
-            var query: Query!
-            if let selectedDate {
-                let (startOfDay, endOfDay) = getStartAndEndOfDay(for: selectedDate, isNext7Days: isNext7Days)
-                query = db.collection("tasks")
-                    .whereField("date", isGreaterThanOrEqualTo: startOfDay)
-                    .whereField("date", isLessThan: endOfDay)
-            } else {
-                query = db.collection("tasks")
-                    .whereField("date", isEqualTo: NSNull())
-            }
-            tasks.removeAll()
-
-            listenerRegistration = query
-                .addSnapshotListener { [weak self] (querySnapshot, error) in
-                    guard let documents = querySnapshot?.documents else {
-                        self?.errorMessage = "No documents in 'task' collection"
-                        return
-                    }
-                    self?.tasks = documents.compactMap { queryDocumentSnapshot in
-                        let result = Result { try queryDocumentSnapshot.data(as: Task.self) }
-                        
-                        switch result {
-                        case .success(let task):
-                            self?.errorMessage = nil
-                            return task
-                        case .failure(let error):
-                            switch error {
-                            case DecodingError.typeMismatch(_, let context):
-                                self?.errorMessage = "\(error.localizedDescription): \(context.debugDescription)"
-                            case DecodingError.valueNotFound(_, let context):
-                                self?.errorMessage = "\(error.localizedDescription): \(context.debugDescription)"
-                            case DecodingError.keyNotFound(_, let context):
-                                self?.errorMessage = "\(error.localizedDescription): \(context.debugDescription)"
-                            case DecodingError.dataCorrupted(let key):
-                                self?.errorMessage = "\(error.localizedDescription): \(key)"
-                            default:
-                                self?.errorMessage = "Error decoding document: \(error.localizedDescription)"
-                            }
-                            return nil
+        
+        var query: Query!
+        if let selectedDate {
+            let (startOfDay, endOfDay) = getStartAndEndOfDay(for: selectedDate, isNext7Days: isNext7Days)
+            query = db.collection("tasks")
+                .whereField("date", isGreaterThanOrEqualTo: startOfDay)
+                .whereField("date", isLessThan: endOfDay)
+        } else {
+            query = db.collection("tasks")
+                .whereField("date", isEqualTo: NSNull())
+        }
+        tasks.removeAll()
+        
+        listenerRegistration = query
+            .addSnapshotListener { [weak self] (querySnapshot, error) in
+                guard let documents = querySnapshot?.documents else {
+                    self?.errorMessage = "No documents in 'task' collection"
+                    return
+                }
+                self?.tasks = documents.compactMap { queryDocumentSnapshot in
+                    let result = Result { try queryDocumentSnapshot.data(as: Task.self) }
+                    
+                    switch result {
+                    case .success(let task):
+                        self?.errorMessage = nil
+                        return task
+                    case .failure(let error):
+                        switch error {
+                        case DecodingError.typeMismatch(_, let context):
+                            self?.errorMessage = "\(error.localizedDescription): \(context.debugDescription)"
+                        case DecodingError.valueNotFound(_, let context):
+                            self?.errorMessage = "\(error.localizedDescription): \(context.debugDescription)"
+                        case DecodingError.keyNotFound(_, let context):
+                            self?.errorMessage = "\(error.localizedDescription): \(context.debugDescription)"
+                        case DecodingError.dataCorrupted(let key):
+                            self?.errorMessage = "\(error.localizedDescription): \(key)"
+                        default:
+                            self?.errorMessage = "Error decoding document: \(error.localizedDescription)"
                         }
+                        return nil
                     }
                 }
+            }
         
     }
     
@@ -140,7 +159,7 @@ class TaskViewModel: ObservableObject {
         var newSubtask = Subtask(title: subtaskTitle, isDone: false)
         newSubtask.id = newSubtaskId
         // Update Firestore
-       
+        
         db.collection("tasks").document(selectedTaskId).updateData([
             "subtasks": FieldValue.arrayUnion([newSubtask.dictionary]) // Ensure newSubtask has a dictionary representation
         ]) { error in
