@@ -24,7 +24,21 @@ class TaskViewModel: ObservableObject {
     private var listenerRegistration: ListenerRegistration?
     
     init() {
+
         observeAuthState()
+    }
+    
+    
+    private func signOut() {
+        let firebaseAuth = Auth.auth()
+        do {
+          try firebaseAuth.signOut()
+            DispatchQueue.main.async {
+                UserDefaults.standard.set(false, forKey: "isSignedIn")
+            }
+        } catch let signOutError as NSError {
+          print("Error signing out: %@", signOutError)
+        }
     }
     private func observeAuthState() {
         Auth.auth().addStateDidChangeListener { [weak self] (_, user) in
@@ -32,6 +46,7 @@ class TaskViewModel: ObservableObject {
             if let user = user {
                 print("Firebase user: \(user.uid)")
                // self?.subscribe(userId: user.uid)
+                //self?.signOut()
             } else {
                 self?.unsubscribe()
                 self?.tasks.removeAll()
