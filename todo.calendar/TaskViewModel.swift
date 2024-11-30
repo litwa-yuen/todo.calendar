@@ -16,7 +16,7 @@ class TaskViewModel: ObservableObject {
     @Published var selectedSubtask: Subtask? = nil
     @Published var subtasks: [Subtask] = []
     private var subtaskListener: ListenerRegistration? // Firestore listener
-    @Published var user: User? // Firebase User
+    private var user: User? // Firebase User
     
     
     @Published var errorMessage: String? = nil
@@ -45,7 +45,7 @@ class TaskViewModel: ObservableObject {
             self?.user = user
             if let user = user {
                 print("Firebase user: \(user.uid)")
-               // self?.subscribe(userId: user.uid)
+                self?.subscribe(selectedDate: Date(), isNext7Days: false)
                 //self?.signOut()
             } else {
                 self?.unsubscribe()
@@ -68,7 +68,8 @@ class TaskViewModel: ObservableObject {
     }
     
     func subscribeSubtask() {
-        let taskRef = db.collection("tasks").document(selectedTask?.id! ?? "")
+        guard let user = user, let selectedTask = selectedTask else { return }
+        let taskRef = db.collection("users").document(user.uid).collection("tasks").document(selectedTask.id ?? "")
         
         subtaskListener = taskRef.addSnapshotListener { [weak self] snapshot, error in
             guard let self = self, let data = snapshot?.data(), error == nil else {
@@ -93,15 +94,15 @@ class TaskViewModel: ObservableObject {
     }
     
     func subscribe(selectedDate: Date?, isNext7Days: Bool) {
-        
+        guard let user else { return }
         var query: Query!
         if let selectedDate {
             let (startOfDay, endOfDay) = getStartAndEndOfDay(for: selectedDate, isNext7Days: isNext7Days)
-            query = db.collection("tasks")
+            query = db.collection("users").document(user.uid).collection("tasks")
                 .whereField("date", isGreaterThanOrEqualTo: startOfDay)
                 .whereField("date", isLessThan: endOfDay)
         } else {
-            query = db.collection("tasks")
+            query = db.collection("users").document(user.uid).collection("tasks")
                 .whereField("date", isEqualTo: NSNull())
         }
         tasks.removeAll()
@@ -140,23 +141,25 @@ class TaskViewModel: ObservableObject {
     }
     
     func markTaskAsDone(taskId: String, isDone: Bool) {
-        db.collection("tasks").document(taskId).updateData(["isDone": isDone])
+        guard let user = user else { return }
+        db.collection("users").document(user.uid).collection("tasks").document(taskId).updateData(["isDone": isDone])
     }
     
     
     
     // Add a new task
     func addTask(title: String, description: String, date: Date?, completion: @escaping (Result<Void, Error>) -> Void) {
-        
+        guard let user = user else { return }
         var newTask = Task(title: title, description: description, isDone: false, subtasks: [])
         
         if let date = date {
             newTask.date = date
         }
-        
-        let newTaskId = db.collection("tasks").document().documentID
+        let userTasksRef = db.collection("users").document(user.uid).collection("tasks")
+
+        let newTaskId = userTasksRef.document().documentID
         newTask.id = newTaskId
-        db.collection("tasks").document(newTaskId).setData(newTask.dictionary) { error in
+        userTasksRef.document(newTaskId).setData(newTask.dictionary) { error in
             if let error = error {
                 completion(.failure(error)) // Pass error back via completion handler
             } else {
@@ -166,16 +169,19 @@ class TaskViewModel: ObservableObject {
     }
     
     func addSubtask(subtaskTitle: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let user = user else { return }
         guard let selectedTaskId = selectedTask?.id else { return }
         
-        let newSubtaskId = db.collection("tasks").document(selectedTaskId).collection("subtasks").document().documentID
+        let userTasksRef = db.collection("users").document(user.uid).collection("tasks")
+        
+        let newSubtaskId = userTasksRef.document(selectedTaskId).collection("subtasks").document().documentID
         
         // Create a new Subtask
         var newSubtask = Subtask(title: subtaskTitle, isDone: false)
         newSubtask.id = newSubtaskId
         // Update Firestore
         
-        db.collection("tasks").document(selectedTaskId).updateData([
+        userTasksRef.document(selectedTaskId).updateData([
             "subtasks": FieldValue.arrayUnion([newSubtask.dictionary]) // Ensure newSubtask has a dictionary representation
         ]) { error in
             if let error = error {
@@ -188,7 +194,8 @@ class TaskViewModel: ObservableObject {
     
     // Delete a task
     func deleteTask(taskId: String) {
-        db.collection("tasks").document(taskId).delete { error in
+        guard let user = user else { return }
+        db.collection("users").document(user.uid).collection("tasks").document(taskId).delete { error in
             if let error = error {
                 print("Error deleting task: \(error.localizedDescription)")
             }
@@ -196,18 +203,19 @@ class TaskViewModel: ObservableObject {
     }
     
     func updateTask() {
-        guard let updateTask = self.selectedTask, let taskId = updateTask.id else {
+        guard let updateTask = self.selectedTask, let taskId = updateTask.id, let user = user else {
             print("Error: Selected task is nil or does not have an ID")
             return
         }
         
-        db.collection("tasks").document(taskId).updateData(["isDone": updateTask.isDone, "title": updateTask.title, "description": updateTask.description, "date": updateTask.date])
+        db.collection("users").document(user.uid).collection("tasks").document(taskId)
+            .updateData(["isDone": updateTask.isDone, "title": updateTask.title, "description": updateTask.description, "date": updateTask.date])
     }
     
     func updateTaskDate(taskId: String, date: Date?) {
+        guard let user = user else { return }
         let dateValue: Any = date ?? NSNull()
-        
-        db.collection("tasks").document(taskId).updateData(["date": dateValue]) { error in
+        db.collection("users").document(user.uid).collection("tasks").document(taskId).updateData(["date": dateValue]) { error in
             if let error = error {
                 print("Error updating task date: \(error.localizedDescription)")
             } else {
@@ -217,9 +225,10 @@ class TaskViewModel: ObservableObject {
     }
     
     func updateSubtask(subtaskId: String, title: String, isDone: Bool) {
-        let taskRef = db.collection("tasks").document(selectedTask?.id ?? "")
+        guard let user = user, let selectedTask else { return }
+        let userTasksRef = db.collection("users").document(user.uid).collection("tasks").document(selectedTask.id!)
         
-        taskRef.getDocument { (document, error) in
+        userTasksRef.getDocument { (document, error) in
             guard let document = document, document.exists,
                   let taskData = document.data(),
                   var subtasks = taskData["subtasks"] as? [[String: Any]] else {
@@ -233,7 +242,7 @@ class TaskViewModel: ObservableObject {
                 subtasks[index]["title"] = title
                 
                 // Update the Firestore document
-                taskRef.updateData(["subtasks": subtasks]) { error in
+                userTasksRef.updateData(["subtasks": subtasks]) { error in
                     if let error = error {
                         print("Error updating subtask: \(error.localizedDescription)")
                     } else {
