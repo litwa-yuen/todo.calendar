@@ -8,7 +8,7 @@ import SwiftUI
 
 struct AddTaskModalView: View {
     @ObservedObject var viewModel: TaskViewModel
-    @State private var selectedDate: Date? = nil
+    @State private var selectedDate: Date? = Date()
     @State private var taskTitle: String = ""
     @State private var taskDescription: String = ""
     @Environment(\.presentationMode) private var presentationMode // For dismissing the modal
@@ -37,6 +37,9 @@ struct AddTaskModalView: View {
                 }
                 Section(header: Text("Task Date")) {
                     DatePickerButtonView(task: $fakeTask, viewModel: viewModel, isNewTask: .constant(true), selectedDate: $selectedDate)
+                }
+                Section(header: Text("Set Reminder")) {
+                    ReminderButtonView(task: $fakeTask)
                 }
                 Section {
                     Button(action: {
