@@ -11,7 +11,6 @@ struct DatePickerModalView: View {
     @Binding var task: Task?
     @ObservedObject var viewModel: TaskViewModel
     @Environment(\.dismiss) var dismiss // To close the modal
-    @State private var tempDate: Date = Date() // Temporary date for selection
     @Binding public var isNewTask: Bool
     @Binding public var selectedDate: Date?
     
@@ -22,7 +21,7 @@ struct DatePickerModalView: View {
                     // Date Picker Section
                     Section(header: Text("Select a Date")) {
                                    DatePicker("Due Date", selection: Binding(
-                                       get: { selectedDate ?? tempDate },
+                                       get: { selectedDate ?? Date() },
                                        set: { selectedDate = $0 }
                                    ), displayedComponents: .date)
                                }
@@ -54,12 +53,10 @@ struct DatePickerModalView: View {
                 // Save Button
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        if isNewTask {
-                            selectedDate = tempDate
-                        } else {
-                            task?.date = tempDate
-                            selectedDate = tempDate
-                            updateTaskDate(taskId: task?.id! ?? "", date: tempDate)
+                        if !isNewTask {
+                            task?.date = selectedDate
+                            selectedDate = selectedDate
+                            updateTaskDate(taskId: task?.id! ?? "", date: selectedDate)
                         }
                         dismiss()
                     }
