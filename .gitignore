@@ -4,6 +4,7 @@
 *.plist
 xcuserdata/
 DerivedData/
+todo.calender/*.plist
 todo.calendar/Assets.xcassets/
 todo.calendar/Preview Content/
 todo.calendar/todo_calendar.entitlements
