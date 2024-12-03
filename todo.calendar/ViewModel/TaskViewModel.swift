@@ -145,12 +145,16 @@ class TaskViewModel: ObservableObject {
         db.collection("users").document(user.uid).collection("tasks").document(taskId).updateData(["isDone": isDone])
     }
     
-    
+    func getNewTaskId() -> String {
+        guard let user = user else { return "" }
+        let userTasksRef = db.collection("users").document(user.uid).collection("tasks")
+        return userTasksRef.document().documentID
+    }
     
     // Add a new task
-    func addTask(title: String, description: String, date: Date?, completion: @escaping (Result<Void, Error>) -> Void) {
+    func addTask(taskId: String, title: String, description: String, reminder: Reminder, /*recurring: Recurring,*/ date: Date?, completion: @escaping (Result<Void, Error>) -> Void) {
         guard let user = user else { return }
-        var newTask = Task(title: title, description: description, isDone: false, subtasks: [])
+        var newTask = Task(title: title, description: description, isDone: false, reminder: reminder, /*recurring: recurring,*/ subtasks: [])
         
         if let date = date {
             newTask.date = date
