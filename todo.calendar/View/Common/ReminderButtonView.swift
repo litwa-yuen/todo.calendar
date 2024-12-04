@@ -15,34 +15,24 @@ struct ReminderButtonView: View {
     @Binding var isNewTask: Bool
     @Binding var isReminderSet: Bool
     @Binding var reminderDate: Date?
-
+    
     var body: some View {
-        VStack {
-            HStack {
-                if isReminderSet {
-                    Image(systemName: "clock")
-                        .foregroundColor(.blue)
-                    Text("Reminder: \(formattedDate(reminderDate!))")
-                        .foregroundColor(.blue)
-                        .font(.subheadline)
-                } else {
-                    Text("No Reminder Set")
-                        .foregroundColor(.gray)
-                        .font(.subheadline)
-                }
-            }
-            .padding(.bottom, 8)
+        
+        Button(action: {
+            showReminderModal = true
+        }) {
+            Text(getText())
+                .padding(.leading)
+                .padding(.trailing)
+                .foregroundColor(isReminderSet ? .black : .gray)
+                .background(
+                    RoundedRectangle(
+                        cornerRadius: 20,
+                        style: .continuous
+                    )
+                    .stroke(isReminderSet ? .black : .gray, lineWidth: 2)
 
-            Button(action: {
-                showReminderModal = true
-            }) {
-                Text("Set Reminder")
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding()
-                    .foregroundColor(.white)
-                    .background(Color.blue)
-                    .cornerRadius(8)
-            }
+                )
         }
         .sheet(isPresented: $showReminderModal) {
             ReminderModalView(isReminderSet: $isReminderSet, reminderDate: $reminderDate, isNewTask: $isNewTask, onSave: setReminder)
@@ -51,21 +41,25 @@ struct ReminderButtonView: View {
             Alert(title: Text("Notification"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
     }
-
+    
+    private func getText() -> String {
+        return isReminderSet ? formattedDate(reminderDate!) : "Reminders"
+    }
+    
     private func setReminder() {
         guard let dueDate = reminderDate else {
             alertMessage = "Please set a due date before setting a reminder."
             showPermissionAlert = true
             return
         }
-
+        
         NotificationManager.shared.requestNotificationPermission { granted, error in
             if let error = error {
                 alertMessage = "Failed to request notification permission: \(error.localizedDescription)"
                 showPermissionAlert = true
                 return
             }
-
+            
             if granted {
                 NotificationManager.shared.scheduleNotification(taskTitle: task.title, taskId: task.id ?? UUID().uuidString, dueDate: dueDate) { error in
                     if let error = error {
@@ -81,7 +75,7 @@ struct ReminderButtonView: View {
             }
         }
     }
-
+    
     private func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium

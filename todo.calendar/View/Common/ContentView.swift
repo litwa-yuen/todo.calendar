@@ -54,7 +54,7 @@ struct ContentView: View {
                     }) {
                         Image(systemName: "plus")
                             .resizable()
-                            .frame(width: 50, height: 50)
+                            .frame(width: 45, height: 45)
                             .foregroundColor(.white)
                             .background(Circle().fill(Color.blue))
                             .shadow(radius: 4)
@@ -66,6 +66,7 @@ struct ContentView: View {
         }
         .sheet(isPresented: $isAddTaskModalPresented) {
             AddTaskModalView(viewModel: viewModel)
+                .presentationDetents([.fraction(0.1)])
         }
         .alert(isPresented: $showingAlert) {
             Alert(

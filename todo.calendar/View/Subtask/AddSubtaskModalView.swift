@@ -22,11 +22,10 @@ struct AddSubtaskModalView: View {
                     .focused($isTaskTitleFocused) // Bind the focus state
                     .padding()
             }
-          
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer() // Push the button to the right
-                    Button("Save Subtask") {
+                    Button("Save") {
                         saveAndReset()
                     }
                     .disabled(taskTitle.isEmpty) // Disable if title is empty

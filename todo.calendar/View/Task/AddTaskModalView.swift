@@ -18,44 +18,52 @@ struct AddTaskModalView: View {
     @FocusState private var isTaskTitleFocused: Bool // Focus state for the text field
     @State private var isReminderSet: Bool = false
     @State private var reminderDate: Date? = Date()
-
-
+    
+    
     var body: some View {
         NavigationView {
-            Form {
-                Section(header: Text("Task Title")) {
-                    TextField("Enter task title", text: $taskTitle)
-                        .focused($isTaskTitleFocused) // Bind the focus state
-                }
-                Section(header: Text("Task Description")) {
-                    TextField("Enter task description", text: $taskDescription)
-                }
-                Section(header: Text("Task Date")) {
+            VStack {
+                
+                TextField("Task Name", text: $taskTitle)
+                    .font(Font.headline)
+                    .focused($isTaskTitleFocused) // Bind the focus state
+                
+                
+                TextField("Description", text: $taskDescription)
+                    .font(Font.subheadline)
+                    .padding(.bottom)
+                
+                HStack {
                     DatePickerButtonView(task: bindTask(), viewModel: viewModel, isNewTask: .constant(true), selectedDate: $selectedDate)
-                }
-                Section(header: Text("Set Reminder")) {
+                    
                     ReminderButtonView(task: bindTask(), isNewTask: .constant(true), isReminderSet: $isReminderSet, reminderDate: $reminderDate)
+                    
+                    Spacer()
                 }
-                Section {
-                    Button(action: {
-                        addTask()
-                    }) {
-                        Text("Save Task")
-                            .frame(maxWidth: .infinity, alignment: .center)
-                    }
-                    .disabled(taskTitle.isEmpty) // Disable if title is empty
-                }
+                .padding(.bottom)
+                
+                
             }
             .onAppear {
                 isTaskTitleFocused = true // Automatically focus when the modal appears
             }
-            .navigationBarItems(trailing: Button("Cancel") {
-                presentationMode.wrappedValue.dismiss()
-            })
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer() // Push the button to the right
+                    Button("Save") {
+                        addTask()
+                    }
+                    .disabled(taskTitle.isEmpty) // Disable if title is empty
+                }
+            }
+            .padding(.top)
+            .padding(.leading)
             .alert(isPresented: $showAlert) {
                 Alert(title: Text("Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
             }
+            
         }
+    
     }
     
     private func bindTask() -> Binding<Task> {
@@ -89,20 +97,20 @@ struct AddTaskModalView: View {
             showAlert = true
             return
         }
-
+        
         NotificationManager.shared.requestNotificationPermission { granted, error in
             if let error = error {
                 alertMessage = "Failed to request notification permission: \(error.localizedDescription)"
                 showAlert = true
                 return
             }
-
+            
             if granted {
                 NotificationManager.shared.scheduleNotification(taskTitle: taskTitle, taskId: taskId, dueDate: dueDate) { error in
                     if let error = error {
                         alertMessage = "Failed to schedule notification: \(error.localizedDescription)"
                         showAlert = true
-                    } 
+                    }
                 }
             } else {
                 alertMessage = "Please enable notifications in your settings to use reminders."
