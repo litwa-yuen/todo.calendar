@@ -19,19 +19,25 @@ struct DatePickerButtonView: View {
             Button(action: {
                 isModalPresented = true
             }) {
-                
-                Text(selectedDate != nil ? formattedDate : "Due Date")
-                    .padding(.leading)
-                    .padding(.trailing)
-                    .foregroundColor(selectedDate != nil ? .black : .gray)
-                    .background(
-                        RoundedRectangle(
-                            cornerRadius: 20,
-                            style: .continuous
-                        )
-                        .stroke(selectedDate != nil ? .black : .gray, lineWidth: 2)
-
+                HStack {
+                    Image(systemName: "calendar") // Replace with your desired image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 15, height: 15)
+                    
+                    Text(selectedDate != nil ? formattedDate : "Due Date") // Replace with your text
+                }
+                .padding(.leading)
+                .padding(.trailing)
+                .foregroundColor(selectedDate != nil ? .black : .gray)
+                .background(
+                    RoundedRectangle(
+                        cornerRadius: 20,
+                        style: .continuous
                     )
+                    .stroke(selectedDate != nil ? .black : .gray, lineWidth: 2)
+                )
+      
             }
             .sheet(isPresented: $isModalPresented) {
                 DatePickerModalView(task: .constant(task), viewModel: viewModel, isNewTask: $isNewTask, selectedDate: $selectedDate)

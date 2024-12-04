@@ -21,18 +21,25 @@ struct ReminderButtonView: View {
         Button(action: {
             showReminderModal = true
         }) {
-            Text(getText())
-                .padding(.leading)
-                .padding(.trailing)
-                .foregroundColor(isReminderSet ? .black : .gray)
-                .background(
-                    RoundedRectangle(
-                        cornerRadius: 20,
-                        style: .continuous
-                    )
-                    .stroke(isReminderSet ? .black : .gray, lineWidth: 2)
-
+            HStack {
+                Image(systemName: "clock") // Replace with your desired image
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 15, height: 15)
+                
+                Text(getText()) // Replace with your text
+                
+            }
+            .padding(.leading)
+            .padding(.trailing)
+            .foregroundColor(isReminderSet ? .black : .gray)
+            .background(
+                RoundedRectangle(
+                    cornerRadius: 20,
+                    style: .continuous
                 )
+                .stroke(isReminderSet ? .black : .gray, lineWidth: 2)
+            )
         }
         .sheet(isPresented: $showReminderModal) {
             ReminderModalView(isReminderSet: $isReminderSet, reminderDate: $reminderDate, isNewTask: $isNewTask, onSave: setReminder)
